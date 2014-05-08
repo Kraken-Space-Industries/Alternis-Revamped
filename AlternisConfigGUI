@@ -1,0 +1,100 @@
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//Alternis Kerbol project by NovaSilisko - Jool & Duna color maps by Winston//
+//You may use this code for reference purposes, all I ask is that you       //
+//include a small note in your readme if you use anything from here. If you //
+//want to make a derivative mod, just PM me to let me know. I can help out  //
+//with any problems (to an extent, I barely understand what's going on here)//
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+using System.Collections.Generic;
+using System.Collections;
+using System;
+using System.IO;
+using UnityEngine;
+
+namespace AlternisKerbol
+{
+	[KSPAddon(KSPAddon.Startup.MainMenu, false)]
+	class AlternisConfigGUI : MonoBehaviour
+	{
+		public bool showSettingsWindow = false;
+		public Rect windowRect = new Rect(Screen.width - 390, 50, 340, 340);
+		public bool settingsEnabled = true;
+		public bool settingsHyperwarp = false;
+		public float settingsCometBright = 1.0f;
+		public bool settingsMoonlet = false;
+		
+		public string settingsPath = "GameData/AlternisKerbol/settings.cfg";
+		
+		void Start()
+		{
+			//Load up all the settings crap
+			ConfigNode AKsettings = null;
+			foreach (ConfigNode node in GameDatabase.Instance.GetConfigNodes("AlternisSettings"))
+				AKsettings = node;
+			
+			bool btmp;
+			if (AKsettings.HasValue("Enabled"))
+				if (bool.TryParse(AKsettings.GetValue("Enabled"), out btmp))
+					settingsEnabled = btmp;
+			
+			if (AKsettings.HasValue("HyperWarp"))
+				if (bool.TryParse(AKsettings.GetValue("HyperWarp"), out btmp))
+					settingsHyperwarp = btmp;
+			
+			if (AKsettings.HasValue("EnableKerbinMoon"))
+				if (bool.TryParse(AKsettings.GetValue("EnableKerbinMoon"), out btmp))
+					settingsMoonlet = btmp;
+			
+			float ftmp;
+			if (AKsettings.HasValue("CometBrightness"))
+				if (float.TryParse(AKsettings.GetValue("CometBrightness"), out ftmp))
+					settingsCometBright = ftmp;
+		}
+		
+		void OnGUI()
+		{
+			if (HighLogic.LoadedScene == GameScenes.MAINMENU) //just make sure in case it decides to load in the wrong place
+			{
+				GUI.color = new Color(0.87f, 0.9f, 1f);
+				if (GUI.Button(new Rect(Screen.width - 200, 0, 120, 30), "Alternis Config"))
+					showSettingsWindow = !showSettingsWindow;
+				
+				if (showSettingsWindow)
+					windowRect = GUI.Window(0, windowRect, MenuSettingsWindow, "Alternis Kerbol Configuration");
+			}
+		}
+		
+		void MenuSettingsWindow(int windowID)
+		{
+			GUI.DragWindow(new Rect(0, 0, 10000, 20));
+			
+			GUI.Label(new Rect(20, 20, 320, 40), "NOTE: Settings only take effect\non game restart");
+			settingsEnabled = GUI.Toggle(new Rect(10, 70, 320, 20), settingsEnabled, "Mod active");
+			GUI.Label(new Rect(40, 90, 320, 20), "Disable this if you want to play on a stock save.");
+			settingsHyperwarp = GUI.Toggle(new Rect(10, 130, 320, 20), settingsHyperwarp, "Enable hyperwarp");
+			GUI.Label(new Rect(40, 150, 320, 20), "Removes 5x warp and adds 1,000,000x warp.");
+			settingsCometBright = GUI.HorizontalSlider(new Rect(40, 190, 260, 20), settingsCometBright, 0.01f, 1.5f);
+			GUI.Label(new Rect(40, 210, 320, 20), "Global comet brightness: " + settingsCometBright.ToString("0.00"));
+			settingsMoonlet = GUI.Toggle(new Rect(10, 250, 320, 20), settingsMoonlet, "Enable Kerbin moonlet");
+			GUI.Label(new Rect(40, 270, 320, 20), "Relocate Bop and make it a moon of Kerbin.");
+			
+			if (GUI.Button(new Rect(140, 290, 60, 20), "Apply"))
+			{
+				ConfigNode saveCFG = new ConfigNode();
+				ConfigNode AKsettings = saveCFG.AddNode("AlternisSettings");
+				AKsettings.AddValue("Enabled", settingsEnabled.ToString());
+				AKsettings.AddValue("HyperWarp", settingsHyperwarp.ToString());
+				AKsettings.AddValue("CometBrightness", settingsCometBright.ToString("0.00"));
+				AKsettings.AddValue("EnableKerbinMoon", settingsMoonlet.ToString());
+				saveCFG.Save(settingsPath, "Alternis settings CFG");
+				print("Modified Alternis settings.cfg");
+			}
+			
+			if (GUI.Button(new Rect(140, 312, 60, 20), "Close"))
+				showSettingsWindow = false;
+		}
+	}
+}
